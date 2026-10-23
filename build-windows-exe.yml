@@ -1,0 +1,50 @@
+# Builds the standalone Windows .exe in the cloud — NOTHING to install on your PC.
+# How to use:
+#   1) Create a free account at github.com, create a new repository.
+#   2) Upload this whole project folder into it (drag & drop on the website works).
+#   3) Open the repo's "Actions" tab -> the build runs automatically.
+#   4) When it finishes (green tick), download "FacebookPagesManager-Windows"
+#      from the build's Artifacts section. Inside is FacebookPagesManager.exe —
+#      one single file, runs by double-click, no Python needed.
+name: Build Windows EXE
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install libraries
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r licensing_server/requirements.txt pytest httpx pyinstaller
+      - name: Run tests
+        run: python -m pytest tests -q -k "not gui"
+      - name: Prepare app icon (stored base64-encoded in the repo)
+        shell: python
+        run: |
+          import base64, pathlib
+          for name in ("app_icon.ico", "app_icon.png"):
+              src = pathlib.Path(name + ".b64")
+              if src.exists() and not pathlib.Path(name).exists():
+                  pathlib.Path(name).write_bytes(base64.b64decode(src.read_text()))
+      - name: Build single-file exe
+        run: pyinstaller --noconfirm FacebookPagesManager-OneFile.spec
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: FacebookPagesManager-Windows
+          path: dist/FacebookPagesManager.exe
+      - name: Build licensing server exe (standalone, no Python needed)
+        run: pyinstaller --noconfirm LicenseServer.spec
+      - name: Upload licensing server exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: FPMLicenseServer-Windows
+          path: dist/FPMLicenseServer.exe

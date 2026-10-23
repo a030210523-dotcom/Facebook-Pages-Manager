@@ -1,0 +1,7 @@
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6
+cryptography>=42.0
+argon2-cffi>=23.1
+requests>=2.32
+# Production: psycopg2-binary, sqlalchemy, alembic, passlib[argon2] — see licensing_server/README.md
